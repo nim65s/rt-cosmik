@@ -35,6 +35,14 @@ cu130 = [
   "torchvision>=0.22.0",
 ]
 
+
+[project.scripts]
+rtcosmik-cameras = "rtcosmik.scripts.run_cameras:main"
+rtcosmik-nlf-inference = "rtcosmik.scripts.run_nlf_inference:main"
+rtcosmik-ocp-codegen = "rtcosmik.scripts.run_ocp_codegen:main"
+rtcosmik-pipeline = "rtcosmik.scripts.run_pipeline:main"
+rtcosmik-triangulation = "rtcosmik.scripts.run_triangulation:main"
+
 [tool.uv]
 conflicts = [
   [

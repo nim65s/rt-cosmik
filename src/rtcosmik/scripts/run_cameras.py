@@ -18,18 +18,18 @@ def main():
     FRAME_SHAPE = (settings.height, settings.width, 3)
 
     camera_buffers, camera_timestamps, camera_locks, frame_counters, camera_barrier, stop_event = create_camera_shared_ressources(NUM_CAMERAS, FRAME_SHAPE)
-    
+
     # Create camera processes
     camera_processes = [
-        Camera(list(cameras.keys())[i], 
-               camera_buffers[i], 
-               camera_timestamps[i], 
-               camera_locks[i], 
-               frame_counters[i], 
-               camera_barrier, 
+        Camera(list(cameras.keys())[i],
+               camera_buffers[i],
+               camera_timestamps[i],
+               camera_locks[i],
+               frame_counters[i],
+               camera_barrier,
                stop_event,
-               FRAME_SHAPE, 
-               settings.fs, 
+               FRAME_SHAPE,
+               settings.fs,
                settings.fourcc,)
         for i in range(NUM_CAMERAS)
     ]

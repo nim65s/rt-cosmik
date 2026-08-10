@@ -74,7 +74,7 @@ class OfflineVideoSource:
         for cap in self.caps:
             cap.release()
 
-def main(args):
+def run_triangulation(args):
     torch.backends.cudnn.benchmark = False
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
@@ -93,15 +93,15 @@ def main(args):
 
         # Create camera processes
         camera_processes = [
-            Camera(list(cameras.keys())[i], 
-                camera_buffers[i], 
-                camera_timestamps[i], 
-                camera_locks[i], 
-                frame_counters[i], 
-                camera_barrier, 
+            Camera(list(cameras.keys())[i],
+                camera_buffers[i],
+                camera_timestamps[i],
+                camera_locks[i],
+                frame_counters[i],
+                camera_barrier,
                 stop_event,
-                FRAME_SHAPE, 
-                settings.fs, 
+                FRAME_SHAPE,
+                settings.fs,
                 settings.fourcc,)
             for i in range(NUM_CAMERAS)
         ]
@@ -195,7 +195,7 @@ def main(args):
 
             for ii in range(NUM_CAMERAS):
                 poses2d = nlf_out_2d[ii]
-                
+
                 if poses2d is None or len(poses2d) == 0 or poses2d[0] is None:
                     continue
 
@@ -204,7 +204,6 @@ def main(args):
 
             if len(valid_cam_ids) < 2:
                 continue
-
 
             p3d = triangulate_points(
                 keypoints_list=keypoints_list,
@@ -218,7 +217,7 @@ def main(args):
 
             if nlf_out['poses3d'][0].shape[0] > 0:
                 points_all = poses_cam0.view(-1, 3).cpu().numpy().T
-                
+
                 colors = np.zeros_like(points_all)
                 colors[0, :] = 1.0  # R
                 colors[1, :] = 0.0  # G
@@ -244,14 +243,26 @@ def main(args):
 
         src.release()
 
-if __name__ == "__main__":
+
+def main():
     p = argparse.ArgumentParser()
     p.add_argument("--online", action="store_true")
-    p.add_argument("--data-dir", type=str, default="data", help="Folder containing input videos")
-    p.add_argument("--videos", nargs="*", default=None, help="Optional explicit list of input videos")
+    p.add_argument(
+        "--data-dir", type=str, default="data", help="Folder containing input videos"
+    )
+    p.add_argument(
+        "--videos",
+        nargs="*",
+        default=None,
+        help="Optional explicit list of input videos",
+    )
     args = p.parse_args()
 
     if args.online:
-        set_start_method('spawn')
+        set_start_method("spawn")
 
-    main(args)
+    run_triangulation(args)
+
+
+if __name__ == "__main__":
+    main()

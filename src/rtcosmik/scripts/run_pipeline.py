@@ -19,7 +19,7 @@ import meshcat.transformations as tf
 import cv2
 import numpy as np
 import torch
-import pinocchio as pin 
+import pinocchio as pin
 from pinocchio.visualize import MeshcatVisualizer
 
 from rtcosmik.config_loader import settings
@@ -248,7 +248,7 @@ class OfflineVideoSource:
             cap.release()
 
 
-def main(args):
+def run_pipeline(args):
     torch.backends.cudnn.benchmark = False
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
@@ -258,7 +258,7 @@ def main(args):
     H = settings.height
     mtxs, dists, projections, rotations, translations = load_camera_parameters(settings.cam_calib_path)
     world_R1_cam, world_T1_cam = load_world_transformation(settings.cam_calib_path)
-    
+
     if args.online:
         cameras = list_cameras()
         NUM_CAMERAS = len(cameras)
@@ -268,15 +268,15 @@ def main(args):
 
         # Create camera processes
         camera_processes = [
-            Camera(list(cameras.keys())[i], 
-                camera_buffers[i], 
-                camera_timestamps[i], 
-                camera_locks[i], 
-                frame_counters[i], 
-                camera_barrier, 
-                stop_event, 
-                FRAME_SHAPE, 
-                settings.fs, 
+            Camera(list(cameras.keys())[i],
+                camera_buffers[i],
+                camera_timestamps[i],
+                camera_locks[i],
+                frame_counters[i],
+                camera_barrier,
+                stop_event,
+                FRAME_SHAPE,
+                settings.fs,
                 settings.fourcc,)
             for i in range(NUM_CAMERAS)
         ]
@@ -320,7 +320,7 @@ def main(args):
             for process in processes:
                 process.stop() if hasattr(process, 'stop') else None
                 process.join(timeout=2)
-    
+
     else: # offline mode
 
         # --- 1. INITIALISATION MESHCAT ---
@@ -382,7 +382,7 @@ def main(args):
 
             for ii in range(NUM_CAMERAS):
                 poses2d = nlf_out_2d[ii]
-                
+
                 if poses2d is None or len(poses2d) == 0 or poses2d[0] is None:
                     continue
 
@@ -408,11 +408,11 @@ def main(args):
                     p3d_buffer.append(p3d_in_world)  # add the 1st frame 30 times
             else:
                 p3d_buffer.append(p3d_in_world) # add the keypoints to the buffer normally
-            
+
             if len(p3d_buffer) == settings.N:
                 p3d_buffer_array = np.array(p3d_buffer)
 
-                # Filter keypoints in world to remove noisy artefacts 
+                # Filter keypoints in world to remove noisy artefacts
                 filtered_p3d_buffer = iir_filter.filter(np.reshape(p3d_buffer_array,(settings.N, 3*len(settings.marker_names))))
                 filtered_p3d_buffer = np.reshape(filtered_p3d_buffer,(settings.N, len(settings.marker_names), 3))
 
@@ -445,7 +445,7 @@ def main(args):
                     # Visualizers
                     viz_human = MeshcatVisualizer(human_model, human_collision_model, human_visual_model)
                     viz_human.initViewer(vis, open=True)
-                    
+
                     # Don't delete the whole Meshcat tree: keep '/markers' etc.
                     try:
                         vis["ref"].delete()
@@ -511,7 +511,7 @@ def main(args):
                         else:
                             ik_class = RT_SWIKA_FATROP(human_model, settings.keys_to_track_list, settings.N, code = settings.ik_code, max_iter=settings.mhe_max_iter)
                         LOGGER.info("[INFO] Model calibration finished, ready to process...")
-                    else : 
+                    else :
                         raise ValueError("Invalid ik type, should be sbs (sample by sample) or mhe (moving horizon estimation)")
 
                     first_sample = False
@@ -519,28 +519,28 @@ def main(args):
                 else: # Init phase finished
                     mks_dict = dict(zip(settings.marker_names, augmented_markers))
 
-                    # IK directly 
+                    # IK directly
                     if settings.ik_type == 'sbs':
                         ik_class._dict_m = mks_dict
-                        q = ik_class.solve_ik_sample_quadprog() 
+                        q = ik_class.solve_ik_sample_quadprog()
                         ik_class._q0 = q
                         viz_human.display(q)
                     elif settings.ik_type == 'mhe':
                         deque_lstm_dict.append(mks_dict)
                         array_data = np.array([np.hstack([d[marker] for marker in settings.keys_to_track_list]) for d in deque_lstm_dict]).T
-                        
+
                         x_array, u_array = ik_class.solve(x_array, u_array, array_data, x_array[:,-1], settings.cost_weights, settings.dt)
 
                         q = pin.neutral(human_model)
                         q[:] = np.array(x_array[:human_model.nq,-1]).flatten()
                         viz_human.display(q)
-                    else : 
+                    else :
                         raise ValueError("Invalid ik type, should be sbs (sample by sample) or mhe (moving horizon estimation)")
             t1=time.perf_counter()
             print(f"Time elapsed for treating one frame = {t1-t0} ms")
 
 
-if __name__ == "__main__":
+def main():
     p = argparse.ArgumentParser()
     p.add_argument("--online", action="store_true")
     p.add_argument("--data-dir", type=str, default="data", help="Folder containing input videos")
@@ -550,4 +550,7 @@ if __name__ == "__main__":
     if args.online:
         set_start_method('spawn')
 
-    main(args)
+    run_pipeline(args)
+
+if __name__ == "__main__":
+    main()

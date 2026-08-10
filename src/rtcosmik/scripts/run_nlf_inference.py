@@ -68,7 +68,7 @@ class OfflineVideoSource:
         for cap in self.caps:
             cap.release()
 
-def main(args):
+def run_nlf_inference(args):
     torch.backends.cudnn.benchmark = False
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
@@ -86,15 +86,15 @@ def main(args):
 
         # Create camera processes
         camera_processes = [
-            Camera(list(cameras.keys())[i], 
-                camera_buffers[i], 
-                camera_timestamps[i], 
-                camera_locks[i], 
-                frame_counters[i], 
-                camera_barrier, 
+            Camera(list(cameras.keys())[i],
+                camera_buffers[i],
+                camera_timestamps[i],
+                camera_locks[i],
+                frame_counters[i],
+                camera_barrier,
                 stop_event,
-                FRAME_SHAPE, 
-                settings.fs, 
+                FRAME_SHAPE,
+                settings.fs,
                 settings.fourcc,)
             for i in range(NUM_CAMERAS)
         ]
@@ -182,7 +182,7 @@ def main(args):
         cv2.destroyAllWindows()
 
 
-if __name__ == "__main__":
+def main():
     p = argparse.ArgumentParser()
     p.add_argument("--online", action="store_true")
     p.add_argument("--data-dir", type=str, default="data", help="Folder containing input videos")
@@ -192,4 +192,7 @@ if __name__ == "__main__":
     if args.online:
         set_start_method('spawn')
 
-    main(args)
+    run_nlf_inference(args)
+
+if __name__ == "__main__":
+    main()
