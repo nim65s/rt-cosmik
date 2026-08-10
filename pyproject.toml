@@ -4,16 +4,12 @@ version = "0.1.0"
 description="Real-Time Constrained and Open-Source Multibody Inverse Kinematics"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "opencv-python>=5.0.0.93",
+]
 
 
 [project.optional-dependencies]
-gui = [
-  "opencv-python"
-]
-headless = [
-  "opencv-python-headless"
-]
 cpu = [
   "torch>=2.7.0",
   "torchvision>=0.22.0",
@@ -73,6 +69,9 @@ torchvision = [
   { index = "pytorch-cu128", extra = "cu128" },
   { index = "pytorch-cu130", extra = "cu130" },
 ]
+
+[[tool.uv.index]]
+url = "https://python.laas.fr/simple/"
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
