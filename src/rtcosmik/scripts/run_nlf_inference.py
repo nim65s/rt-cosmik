@@ -13,6 +13,8 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
 
+import argcomplete
+
 import cv2
 import numpy as np
 import torch
@@ -182,11 +184,16 @@ def run_nlf_inference(args):
         cv2.destroyAllWindows()
 
 
-def main():
-    p = argparse.ArgumentParser()
+def add_arguments(p: argparse.ArgumentParser):
     p.add_argument("--online", action="store_true")
     p.add_argument("--data-dir", type=str, default="data", help="Folder containing input videos")
     p.add_argument("--videos", nargs="*", default=None, help="Optional explicit list of input videos")
+
+
+def main():
+    p = argparse.ArgumentParser()
+    add_arguments(p)
+    argcomplete.autocomplete(p)
     args = p.parse_args()
 
     if args.online:

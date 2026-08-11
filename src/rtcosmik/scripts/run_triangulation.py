@@ -12,6 +12,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
 
+import argcomplete
 import meshcat
 import meshcat.geometry as g
 import meshcat.transformations as tf
@@ -243,9 +244,8 @@ def run_triangulation(args):
 
         src.release()
 
+def add_arguments(p: argparse.ArgumentParser):
 
-def main():
-    p = argparse.ArgumentParser()
     p.add_argument("--online", action="store_true")
     p.add_argument(
         "--data-dir", type=str, default="data", help="Folder containing input videos"
@@ -256,6 +256,11 @@ def main():
         default=None,
         help="Optional explicit list of input videos",
     )
+
+def main():
+    p = argparse.ArgumentParser()
+    add_arguments(p)
+    argcomplete.autocomplete(p)
     args = p.parse_args()
 
     if args.online:

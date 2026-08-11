@@ -5,14 +5,17 @@ description="Real-Time Constrained and Open-Source Multibody Inverse Kinematics"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "argcomplete>=3.6.3",
     "casadi>=3.7.2",
+    "example-robot-data-loaders>=5.0.0",
     "meshcat>=0.3.2",
-    "opencv-python>=5.0.0.93",
+    "opencv-python>=4.13.0",
+    "packaging>=26.2",
     "pin>=4.1.0",
     "pynput>=1.8.2",
     "quadprog>=0.1.13",
     "scipy>=1.15.3",
-    "ultralytics>=8.4.117",
+    "ultralytics>=8.4.51",
 ]
 
 
@@ -40,6 +43,7 @@ cu130 = [
 
 
 [project.scripts]
+rtcosmik = "rtcosmik.scripts.rtcosmik:main"
 rtcosmik-cameras = "rtcosmik.scripts.run_cameras:main"
 rtcosmik-nlf-inference = "rtcosmik.scripts.run_nlf_inference:main"
 rtcosmik-ocp-codegen = "rtcosmik.scripts.run_ocp_codegen:main"
@@ -108,5 +112,5 @@ url = "https://download.pytorch.org/whl/cu130"
 explicit = true
 
 [build-system]
-requires = ["uv_build>=0.12.1,<0.13.0"]
+requires = ["uv_build>=0.11.28,<0.13.0"]
 build-backend = "uv_build"

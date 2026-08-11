@@ -12,6 +12,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
 
+import argcomplete
 import meshcat
 import meshcat.geometry as g
 import meshcat.transformations as tf
@@ -539,12 +540,15 @@ def run_pipeline(args):
             t1=time.perf_counter()
             print(f"Time elapsed for treating one frame = {t1-t0} ms")
 
-
-def main():
-    p = argparse.ArgumentParser()
+def add_arguments(p: argparse.ArgumentParser):
     p.add_argument("--online", action="store_true")
     p.add_argument("--data-dir", type=str, default="data", help="Folder containing input videos")
     p.add_argument("--videos", nargs="*", default=None, help="Optional explicit list of input videos")
+
+def main():
+    p = argparse.ArgumentParser()
+    add_arguments(p)
+    argcomplete.autocomplete(p)
     args = p.parse_args()
 
     if args.online:
