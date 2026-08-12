@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import sys
 from pathlib import Path
 
@@ -27,11 +28,22 @@ from rtcosmik.config_loader import settings
 from rtcosmik.nlf.nlf import NLFEstimator, DisplayConsumerNLF
 from rtcosmik.triangulation.triangulation import triangulate_points
 from rtcosmik.filtering.iir import IIR
-from rtcosmik.human_model.model_utils import scale_human_model, mks_registration, recalibrate_marker_frames_in_joint_space
+from rtcosmik.human_model.model_utils import (
+    scale_human_model,
+    mks_registration,
+    recalibrate_marker_frames_in_joint_space,
+)
 from rtcosmik.ik.ik import RT_IK, RT_SWIKA_FATROP, RT_SWIKA_ACADOS
-from rtcosmik.camera.cam_utils import list_cameras, load_camera_parameters, load_world_transformation
+from rtcosmik.camera.cam_utils import (
+    list_cameras,
+    load_camera_parameters,
+    load_world_transformation,
+)
 from rtcosmik.camera.camera import Camera
-from rtcosmik.utils.mp_utils import create_camera_shared_ressources, create_pipeline_shared_ressources
+from rtcosmik.utils.mp_utils import (
+    create_camera_shared_ressources,
+    create_pipeline_shared_ressources,
+)
 from rtcosmik.pipeline.pipeline import PipelineProcess
 from rtcosmik.viewer.viewer import ViewerProcess
 
@@ -44,7 +56,7 @@ import logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-    force=True
+    force=True,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -67,20 +79,26 @@ def make_triad_geom(axis_length=0.08, linewidth=2):
 
     # Fallback: LineSegments
     # 6 vertices = 3 segments: O->X, O->Y, O->Z
-    pts = np.array([
-        [0.0, axis_length,  0.0, 0.0,       0.0, 0.0],
-        [0.0, 0.0,          0.0, axis_length,0.0, 0.0],
-        [0.0, 0.0,          0.0, 0.0,       0.0, axis_length],
-    ], dtype=np.float32)
+    pts = np.array(
+        [
+            [0.0, axis_length, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, axis_length, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, axis_length],
+        ],
+        dtype=np.float32,
+    )
 
-    cols = np.array([
-        [255, 255,   0,   0,   0,   0],  # R
-        [  0,   0, 255, 255,   0,   0],  # G
-        [  0,   0,   0,   0, 255, 255],  # B
-    ], dtype=np.uint8)
+    cols = np.array(
+        [
+            [255, 255, 0, 0, 0, 0],  # R
+            [0, 0, 255, 255, 0, 0],  # G
+            [0, 0, 0, 0, 255, 255],  # B
+        ],
+        dtype=np.uint8,
+    )
 
     geom = g.PointsGeometry(position=pts, color=cols)
-    mat  = g.LineBasicMaterial(vertexColors=True, linewidth=linewidth)
+    mat = g.LineBasicMaterial(vertexColors=True, linewidth=linewidth)
     return g.LineSegments(geom, mat)
 
 
@@ -107,12 +125,13 @@ def _pin_se3_to_meshcat_tf(M: pin.SE3) -> np.ndarray:
     T[:3, 3] = M.translation
     return T
 
+
 def setup_debug_visuals(
     vis,
     model: pin.Model,
     marker_names,
     triad_length=0.08,
-    triad_radius=0.003,   # gardé pour compat, pas forcément utilisé en fallback
+    triad_radius=0.003,  # gardé pour compat, pas forcément utilisé en fallback
     root="debug",
     clear_root=True,
 ):
@@ -132,7 +151,9 @@ def setup_debug_visuals(
 
     # Create one triad geometry and reuse it
     # linewidth is a best-effort (WebGL may ignore thickness)
-    triad = make_triad_geom(axis_length=triad_length, linewidth=max(1, int(triad_radius * 500)))
+    triad = make_triad_geom(
+        axis_length=triad_length, linewidth=max(1, int(triad_radius * 500))
+    )
 
     # --- joints triads ---
     for jid in range(1, model.njoints):
@@ -189,13 +210,22 @@ def update_debug_visuals(vis, model: pin.Model, data: pin.Data, q, dbg):
     if marker_points:
         P = np.stack(marker_points, axis=1)  # (3, N)
         C = np.tile(np.array([[0], [255], [0]], dtype=np.uint8), (1, P.shape[1]))
-        vis[dbg.get("model_marker_path", "debug/model_markers")].set_object(g.PointCloud(P, C))
+        vis[dbg.get("model_marker_path", "debug/model_markers")].set_object(
+            g.PointCloud(P, C)
+        )
+
 
 # -----------------------
 # Named measured markers (debug)
 # -----------------------
 
-def setup_measured_markers(vis: "meshcat.Visualizer", marker_names: Sequence[str], radius: float = 0.010, color: int = 0xff0000):
+
+def setup_measured_markers(
+    vis: "meshcat.Visualizer",
+    marker_names: Sequence[str],
+    radius: float = 0.010,
+    color: int = 0xFF0000,
+):
     """Create one small sphere per measured marker, under markers/measured/<name>."""
     sphere = g.Sphere(radius)
     mat = g.MeshPhongMaterial(color=color, opacity=0.9)
@@ -212,11 +242,13 @@ def update_measured_markers(vis: "meshcat.Visualizer", mks_dict: dict):
             continue
         vis[f"markers/measured/{name}"].set_transform(T)
 
+
 def list_videos(data_dir: Path) -> List[Path]:
     if not data_dir.exists():
         raise FileNotFoundError(f"data dir does not exist: {data_dir}")
     vids = [p for p in sorted(data_dir.iterdir()) if p.suffix.lower() in [".mp4"]]
     return vids
+
 
 @dataclass
 class OfflineVideoSource:
@@ -257,19 +289,29 @@ def run_pipeline(args):
     # Determine size
     W = settings.width
     H = settings.height
-    mtxs, dists, projections, rotations, translations = load_camera_parameters(settings.cam_calib_path)
+    mtxs, dists, projections, rotations, translations = load_camera_parameters(
+        settings.cam_calib_path
+    )
     world_R1_cam, world_T1_cam = load_world_transformation(settings.cam_calib_path)
 
     if args.online:
         cameras = list_cameras()
         NUM_CAMERAS = len(cameras)
         FRAME_SHAPE = (H, W, 3)
-        camera_buffers, camera_timestamps, camera_locks, frame_counters, camera_barrier, stop_event = create_camera_shared_ressources(NUM_CAMERAS, FRAME_SHAPE)
+        (
+            camera_buffers,
+            camera_timestamps,
+            camera_locks,
+            frame_counters,
+            camera_barrier,
+            stop_event,
+        ) = create_camera_shared_ressources(NUM_CAMERAS, FRAME_SHAPE)
         results_queues = create_pipeline_shared_ressources()
 
         # Create camera processes
         camera_processes = [
-            Camera(list(cameras.keys())[i],
+            Camera(
+                list(cameras.keys())[i],
                 camera_buffers[i],
                 camera_timestamps[i],
                 camera_locks[i],
@@ -278,7 +320,8 @@ def run_pipeline(args):
                 stop_event,
                 FRAME_SHAPE,
                 settings.fs,
-                settings.fourcc,)
+                settings.fourcc,
+            )
             for i in range(NUM_CAMERAS)
         ]
 
@@ -299,7 +342,7 @@ def run_pipeline(args):
             num_cameras=NUM_CAMERAS,
         )
 
-        viewer= ViewerProcess(
+        viewer = ViewerProcess(
             settings=settings,
             results_queues=results_queues,
             stop_event=stop_event,
@@ -319,11 +362,10 @@ def run_pipeline(args):
             stop_event.set()
             # Stop processes
             for process in processes:
-                process.stop() if hasattr(process, 'stop') else None
+                process.stop() if hasattr(process, "stop") else None
                 process.join(timeout=2)
 
-    else: # offline mode
-
+    else:  # offline mode
         # --- 1. INITIALISATION MESHCAT ---
         vis = meshcat.Visualizer()
         LOGGER.info(f"[INFO] Meshcat visualizer available here: {vis.url()}")
@@ -358,15 +400,16 @@ def run_pipeline(args):
         p3d_buffer = deque(maxlen=settings.N)
 
         # Filter
-        num_channel = 3*len(settings.marker_names)
-        iir_filter = IIR(
-            num_channel=num_channel,
-            sampling_frequency=settings.fs
+        num_channel = 3 * len(settings.marker_names)
+        iir_filter = IIR(num_channel=num_channel, sampling_frequency=settings.fs)
+        iir_filter.add_filter(
+            order=settings.order,
+            cutoff=settings.cutoff_freq,
+            filter_type=settings.filter_type,
         )
-        iir_filter.add_filter(order=settings.order, cutoff=settings.cutoff_freq, filter_type=settings.filter_type)
 
         while True:
-            t0=time.perf_counter()
+            t0 = time.perf_counter()
             frames = src.read()
             if frames is None:
                 break
@@ -402,22 +445,32 @@ def run_pipeline(args):
 
             p3d_np = torch.from_numpy(p3d).to(dtype=torch.float32)
 
-            p3d_in_world=np.array([np.dot(world_R1_cam,point) + world_T1_cam for point in p3d_np])
+            p3d_in_world = np.array(
+                [np.dot(world_R1_cam, point) + world_T1_cam for point in p3d_np]
+            )
 
             if first_sample:
                 for k in range(settings.N):
                     p3d_buffer.append(p3d_in_world)  # add the 1st frame 30 times
             else:
-                p3d_buffer.append(p3d_in_world) # add the keypoints to the buffer normally
+                p3d_buffer.append(
+                    p3d_in_world
+                )  # add the keypoints to the buffer normally
 
             if len(p3d_buffer) == settings.N:
                 p3d_buffer_array = np.array(p3d_buffer)
 
                 # Filter keypoints in world to remove noisy artefacts
-                filtered_p3d_buffer = iir_filter.filter(np.reshape(p3d_buffer_array,(settings.N, 3*len(settings.marker_names))))
-                filtered_p3d_buffer = np.reshape(filtered_p3d_buffer,(settings.N, len(settings.marker_names), 3))
+                filtered_p3d_buffer = iir_filter.filter(
+                    np.reshape(
+                        p3d_buffer_array, (settings.N, 3 * len(settings.marker_names))
+                    )
+                )
+                filtered_p3d_buffer = np.reshape(
+                    filtered_p3d_buffer, (settings.N, len(settings.marker_names), 3)
+                )
 
-                augmented_markers=filtered_p3d_buffer[-1]
+                augmented_markers = filtered_p3d_buffer[-1]
 
                 # VISUALISATION OF AUGMENTED MARKERS in RED
                 colors = np.zeros_like(augmented_markers.T)
@@ -432,19 +485,35 @@ def run_pipeline(args):
                 if first_sample:
                     mks_dict = dict(zip(settings.marker_names, augmented_markers))
 
-                    human = robex.human.HumanLoader(height=settings.human_height, weight=settings.human_weight, gender=settings.human_gender).robot
+                    human = robex.human.HumanLoader(
+                        height=settings.human_height,
+                        weight=settings.human_weight,
+                        gender=settings.human_gender,
+                    ).robot
                     human_model = human.model
                     human_collision_model = human.collision_model
                     human_visual_model = human.visual_model
 
-                    #scale the model to data
-                    human_model = scale_human_model(human_model, mks_dict, gender=settings.human_gender, subject_height=settings.human_height)
-                    human_model= mks_registration(human_model, mks_dict, gender=settings.human_gender, subject_height=settings.human_height)
+                    # scale the model to data
+                    human_model = scale_human_model(
+                        human_model,
+                        mks_dict,
+                        gender=settings.human_gender,
+                        subject_height=settings.human_height,
+                    )
+                    human_model = mks_registration(
+                        human_model,
+                        mks_dict,
+                        gender=settings.human_gender,
+                        subject_height=settings.human_height,
+                    )
                     # human_data = pin.Data(human_model)
 
                     # Init meshcat viewer for human
                     # Visualizers
-                    viz_human = MeshcatVisualizer(human_model, human_collision_model, human_visual_model)
+                    viz_human = MeshcatVisualizer(
+                        human_model, human_collision_model, human_visual_model
+                    )
                     viz_human.initViewer(vis, open=True)
 
                     # Don't delete the whole Meshcat tree: keep '/markers' etc.
@@ -454,8 +523,12 @@ def run_pipeline(args):
                         pass
                     viz_human.loadViewerModel("ref")
 
-                    viz_human.viewer["/Background"].set_property("top_color", [1, 1, 1])  # Dark gray (RGB values in [0, 1])
-                    viz_human.viewer["/Background"].set_property("bottom_color", [0.65, 0.65, 0.65])  # Same color → flat background
+                    viz_human.viewer["/Background"].set_property(
+                        "top_color", [1, 1, 1]
+                    )  # Dark gray (RGB values in [0, 1])
+                    viz_human.viewer["/Background"].set_property(
+                        "bottom_color", [0.65, 0.65, 0.65]
+                    )  # Same color → flat background
 
                     # viz_human.display(pin.neutral(human_model))
                     # # show debug frames at neutral configuration
@@ -467,83 +540,173 @@ def run_pipeline(args):
                     # input()
 
                     # IK
-                    if settings.ik_type == 'sbs':
+                    if settings.ik_type == "sbs":
                         omega = {}
                         for key in settings.keys_to_track_list:
                             omega[key] = 1
                         q = pin.neutral(human_model)
-                        ik_class = RT_IK(human_model, mks_dict, q, settings.keys_to_track_list, settings.dt, omega)
+                        ik_class = RT_IK(
+                            human_model,
+                            mks_dict,
+                            q,
+                            settings.keys_to_track_list,
+                            settings.dt,
+                            omega,
+                        )
 
                         q = ik_class.solve_ik_sample_casadi()
                         ik_class._q0 = q
                         viz_human.display(q)
 
                         # Recalibrate briefly the markers translation in joint frames
-                        human_model=recalibrate_marker_frames_in_joint_space(human_model,q,mks_dict,settings.marker_names)
-                        human_data=human_model.createData()
+                        human_model = recalibrate_marker_frames_in_joint_space(
+                            human_model, q, mks_dict, settings.marker_names
+                        )
+                        human_data = human_model.createData()
 
-                        ik_class = RT_IK(human_model, mks_dict, q, settings.keys_to_track_list, settings.dt, omega)
-                        LOGGER.info("[INFO] Model calibration finished, ready to process...")
+                        ik_class = RT_IK(
+                            human_model,
+                            mks_dict,
+                            q,
+                            settings.keys_to_track_list,
+                            settings.dt,
+                            omega,
+                        )
+                        LOGGER.info(
+                            "[INFO] Model calibration finished, ready to process..."
+                        )
 
-                    elif settings.ik_type == 'mhe':
-                        ik_class = RT_SWIKA_FATROP(human_model, settings.keys_to_track_list, settings.N, code = settings.ik_code)
+                    elif settings.ik_type == "mhe":
+                        ik_class = RT_SWIKA_FATROP(
+                            human_model,
+                            settings.keys_to_track_list,
+                            settings.N,
+                            code=settings.ik_code,
+                        )
 
-                        x_array = np.zeros((human_model.nq+human_model.nv, settings.N))
-                        x_array[6,:]=1
+                        x_array = np.zeros(
+                            (human_model.nq + human_model.nv, settings.N)
+                        )
+                        x_array[6, :] = 1
                         u_array = np.zeros((human_model.nv, settings.N))
                         deque_lstm_dict = deque(maxlen=settings.N)
                         for k in range(settings.N):
                             deque_lstm_dict.append(mks_dict)
 
-                        array_data = np.array([np.hstack([d[marker] for marker in settings.keys_to_track_list]) for d in deque_lstm_dict]).T
+                        array_data = np.array(
+                            [
+                                np.hstack(
+                                    [
+                                        d[marker]
+                                        for marker in settings.keys_to_track_list
+                                    ]
+                                )
+                                for d in deque_lstm_dict
+                            ]
+                        ).T
 
-                        x_array, u_array = ik_class.solve(x_array, u_array, array_data, x_array[:,-1], settings.cost_weights, settings.dt)
+                        x_array, u_array = ik_class.solve(
+                            x_array,
+                            u_array,
+                            array_data,
+                            x_array[:, -1],
+                            settings.cost_weights,
+                            settings.dt,
+                        )
 
                         q = pin.neutral(human_model)
-                        q[:] = np.array(x_array[:human_model.nq,-1]).flatten()
+                        q[:] = np.array(x_array[: human_model.nq, -1]).flatten()
                         viz_human.display(q)
 
                         # Recalibrate briefly the markers translation in joint frames
-                        human_model=recalibrate_marker_frames_in_joint_space(human_model,q,mks_dict,settings.marker_names)
-                        human_data=human_model.createData()
+                        human_model = recalibrate_marker_frames_in_joint_space(
+                            human_model, q, mks_dict, settings.marker_names
+                        )
+                        human_data = human_model.createData()
 
-                        if settings.mhe_backend == 'acados':
-                            ik_class = RT_SWIKA_ACADOS(human_model, settings.keys_to_track_list, settings.N, settings.dt, export_dir=settings.acados_export_dir, acados_source_dir=settings.acados_source_dir, max_iter=settings.mhe_max_iter)
+                        if settings.mhe_backend == "acados":
+                            ik_class = RT_SWIKA_ACADOS(
+                                human_model,
+                                settings.keys_to_track_list,
+                                settings.N,
+                                settings.dt,
+                                export_dir=settings.acados_export_dir,
+                                acados_source_dir=settings.acados_source_dir,
+                                max_iter=settings.mhe_max_iter,
+                            )
                         else:
-                            ik_class = RT_SWIKA_FATROP(human_model, settings.keys_to_track_list, settings.N, code = settings.ik_code, max_iter=settings.mhe_max_iter)
-                        LOGGER.info("[INFO] Model calibration finished, ready to process...")
-                    else :
-                        raise ValueError("Invalid ik type, should be sbs (sample by sample) or mhe (moving horizon estimation)")
+                            ik_class = RT_SWIKA_FATROP(
+                                human_model,
+                                settings.keys_to_track_list,
+                                settings.N,
+                                code=settings.ik_code,
+                                max_iter=settings.mhe_max_iter,
+                            )
+                        LOGGER.info(
+                            "[INFO] Model calibration finished, ready to process..."
+                        )
+                    else:
+                        raise ValueError(
+                            "Invalid ik type, should be sbs (sample by sample) or mhe (moving horizon estimation)"
+                        )
 
                     first_sample = False
 
-                else: # Init phase finished
+                else:  # Init phase finished
                     mks_dict = dict(zip(settings.marker_names, augmented_markers))
 
                     # IK directly
-                    if settings.ik_type == 'sbs':
+                    if settings.ik_type == "sbs":
                         ik_class._dict_m = mks_dict
                         q = ik_class.solve_ik_sample_quadprog()
                         ik_class._q0 = q
                         viz_human.display(q)
-                    elif settings.ik_type == 'mhe':
+                    elif settings.ik_type == "mhe":
                         deque_lstm_dict.append(mks_dict)
-                        array_data = np.array([np.hstack([d[marker] for marker in settings.keys_to_track_list]) for d in deque_lstm_dict]).T
+                        array_data = np.array(
+                            [
+                                np.hstack(
+                                    [
+                                        d[marker]
+                                        for marker in settings.keys_to_track_list
+                                    ]
+                                )
+                                for d in deque_lstm_dict
+                            ]
+                        ).T
 
-                        x_array, u_array = ik_class.solve(x_array, u_array, array_data, x_array[:,-1], settings.cost_weights, settings.dt)
+                        x_array, u_array = ik_class.solve(
+                            x_array,
+                            u_array,
+                            array_data,
+                            x_array[:, -1],
+                            settings.cost_weights,
+                            settings.dt,
+                        )
 
                         q = pin.neutral(human_model)
-                        q[:] = np.array(x_array[:human_model.nq,-1]).flatten()
+                        q[:] = np.array(x_array[: human_model.nq, -1]).flatten()
                         viz_human.display(q)
-                    else :
-                        raise ValueError("Invalid ik type, should be sbs (sample by sample) or mhe (moving horizon estimation)")
-            t1=time.perf_counter()
-            print(f"Time elapsed for treating one frame = {t1-t0} ms")
+                    else:
+                        raise ValueError(
+                            "Invalid ik type, should be sbs (sample by sample) or mhe (moving horizon estimation)"
+                        )
+            t1 = time.perf_counter()
+            print(f"Time elapsed for treating one frame = {t1 - t0} ms")
+
 
 def add_arguments(p: argparse.ArgumentParser):
     p.add_argument("--online", action="store_true")
-    p.add_argument("--data-dir", type=str, default="data", help="Folder containing input videos")
-    p.add_argument("--videos", nargs="*", default=None, help="Optional explicit list of input videos")
+    p.add_argument(
+        "--data-dir", type=str, default="data", help="Folder containing input videos"
+    )
+    p.add_argument(
+        "--videos",
+        nargs="*",
+        default=None,
+        help="Optional explicit list of input videos",
+    )
+
 
 def main():
     p = argparse.ArgumentParser()
@@ -552,9 +715,10 @@ def main():
     args = p.parse_args()
 
     if args.online:
-        set_start_method('spawn')
+        set_start_method("spawn")
 
     run_pipeline(args)
+
 
 if __name__ == "__main__":
     main()

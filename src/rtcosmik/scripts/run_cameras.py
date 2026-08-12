@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 from pathlib import Path
 
@@ -12,36 +14,47 @@ from rtcosmik.camera.camera import Camera, DisplayConsumer
 from rtcosmik.utils.mp_utils import create_camera_shared_ressources
 from rtcosmik.saver.video_saver import VideoSaverProcess2
 
+
 def main():
     cameras = list_cameras()
     NUM_CAMERAS = len(cameras)
     FRAME_SHAPE = (settings.height, settings.width, 3)
 
-    camera_buffers, camera_timestamps, camera_locks, frame_counters, camera_barrier, stop_event = create_camera_shared_ressources(NUM_CAMERAS, FRAME_SHAPE)
+    (
+        camera_buffers,
+        camera_timestamps,
+        camera_locks,
+        frame_counters,
+        camera_barrier,
+        stop_event,
+    ) = create_camera_shared_ressources(NUM_CAMERAS, FRAME_SHAPE)
 
     # Create camera processes
     camera_processes = [
-        Camera(list(cameras.keys())[i],
-               camera_buffers[i],
-               camera_timestamps[i],
-               camera_locks[i],
-               frame_counters[i],
-               camera_barrier,
-               stop_event,
-               FRAME_SHAPE,
-               settings.fs,
-               settings.fourcc,)
+        Camera(
+            list(cameras.keys())[i],
+            camera_buffers[i],
+            camera_timestamps[i],
+            camera_locks[i],
+            frame_counters[i],
+            camera_barrier,
+            stop_event,
+            FRAME_SHAPE,
+            settings.fs,
+            settings.fourcc,
+        )
         for i in range(NUM_CAMERAS)
     ]
 
     # Create display consumer
-    display = DisplayConsumer(frame_counters =frame_counters,
+    display = DisplayConsumer(
+        frame_counters=frame_counters,
         camera_buffers=camera_buffers,
         camera_locks=camera_locks,
         timestamp_buffers=camera_timestamps,
         stop_event=stop_event,
         frame_shape=FRAME_SHAPE,
-        num_cameras=NUM_CAMERAS
+        num_cameras=NUM_CAMERAS,
     )
 
     video_savers = []
@@ -55,11 +68,11 @@ def main():
                 frame_shape=FRAME_SHAPE,
                 save_dir=settings.SAVE_DIR,
                 fps=settings.fs,
-                stop_event=stop_event
+                stop_event=stop_event,
             )
             video_savers.append(vs)
 
-    processes = camera_processes   + [display]
+    processes = camera_processes + [display]
 
     # Start processes
     for p in processes:
@@ -72,8 +85,9 @@ def main():
         stop_event.set()
         # Stop processes
         for process in processes:
-            process.stop() if hasattr(process, 'stop') else None
+            process.stop() if hasattr(process, "stop") else None
             process.join(timeout=2)
+
 
 if __name__ == "__main__":
     main()

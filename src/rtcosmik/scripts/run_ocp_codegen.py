@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from rtcosmik.config_loader import settings
 from rtcosmik.ik.ik import RT_SWIKA_FATROP
 from rtcosmik.human_model.pin_model import build_dummy_model_no_visuals

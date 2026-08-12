@@ -36,13 +36,6 @@ buildPythonPackage (finalAttrs: {
     ];
   };
 
-  postPatch = ''
-    substituteInPlace pyproject.toml \
-      --replace-fail '"casadi>=' '#"casadi>=' \
-      --replace-fail '"example-robot-data-loaders>=' '#"example-robot-data>=' \
-      --replace-fail '"pin>=' '#"pin>='
-  '';
-
   build-system = [
     uv-build
   ];

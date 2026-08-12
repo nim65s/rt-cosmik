@@ -4,43 +4,7 @@ version = "0.1.0"
 description="Real-Time Constrained and Open-Source Multibody Inverse Kinematics"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
-    "argcomplete>=3.6.3",
-    "casadi>=3.7.2",
-    "example-robot-data-loaders>=5.0.0",
-    "meshcat>=0.3.2",
-    "opencv-python>=4.13.0",
-    "packaging>=26.2",
-    "pin>=4.1.0",
-    "pynput>=1.8.2",
-    "quadprog>=0.1.13",
-    "scipy>=1.15.3",
-    "ultralytics>=8.4.51",
-]
-
-
-[project.optional-dependencies]
-cpu = [
-  "torch>=2.7.0",
-  "torchvision>=0.22.0",
-]
-cu118 = [
-  "torch>=2.7.0",
-  "torchvision>=0.22.0",
-]
-cu126 = [
-  "torch>=2.7.0",
-  "torchvision>=0.22.0",
-]
-cu128 = [
-  "torch>=2.7.0",
-  "torchvision>=0.22.0",
-]
-cu130 = [
-  "torch>=2.7.0",
-  "torchvision>=0.22.0",
-]
-
+dependencies = [ ]
 
 [project.scripts]
 rtcosmik = "rtcosmik.scripts.rtcosmik:main"
@@ -49,67 +13,6 @@ rtcosmik-nlf-inference = "rtcosmik.scripts.run_nlf_inference:main"
 rtcosmik-ocp-codegen = "rtcosmik.scripts.run_ocp_codegen:main"
 rtcosmik-pipeline = "rtcosmik.scripts.run_pipeline:main"
 rtcosmik-triangulation = "rtcosmik.scripts.run_triangulation:main"
-
-[tool.uv]
-conflicts = [
-  [
-    { extra = "gui" },
-    { extra = "headless" },
-  ],
-  [
-    { extra = "cpu" },
-    { extra = "cu118" },
-    { extra = "cu126" },
-    { extra = "cu128" },
-    { extra = "cu130" },
-  ],
-]
-
-[tool.uv.sources]
-torch = [
-  { index = "pytorch-cpu", extra = "cpu" },
-  { index = "pytorch-cu118", extra = "cu118" },
-  { index = "pytorch-cu126", extra = "cu126" },
-  { index = "pytorch-cu128", extra = "cu128" },
-  { index = "pytorch-cu130", extra = "cu130" },
-]
-torchvision = [
-  { index = "pytorch-cpu", extra = "cpu" },
-  { index = "pytorch-cu118", extra = "cu118" },
-  { index = "pytorch-cu126", extra = "cu126" },
-  { index = "pytorch-cu128", extra = "cu128" },
-  { index = "pytorch-cu130", extra = "cu130" },
-]
-
-[[tool.uv.index]]
-url = "https://python.laas.fr/simple/"
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-[[tool.uv.index]]
-name = "pytorch-cu118"
-url = "https://download.pytorch.org/whl/cu118"
-explicit = true
-
-[[tool.uv.index]]
-name = "pytorch-cu126"
-url = "https://download.pytorch.org/whl/cu126"
-explicit = true
-
-
-[[tool.uv.index]]
-name = "pytorch-cu128"
-url = "https://download.pytorch.org/whl/cu128"
-explicit = true
-
-
-[[tool.uv.index]]
-name = "pytorch-cu130"
-url = "https://download.pytorch.org/whl/cu130"
-explicit = true
 
 [build-system]
 requires = ["uv_build>=0.11.28,<0.13.0"]

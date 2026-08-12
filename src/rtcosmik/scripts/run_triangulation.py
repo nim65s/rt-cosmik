@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import sys
 from pathlib import Path
 
@@ -22,7 +23,11 @@ import numpy as np
 import torch
 from rtcosmik.nlf.nlf import NLFEstimator, DisplayConsumerNLF
 from rtcosmik.config_loader import settings
-from rtcosmik.camera.cam_utils import list_cameras, load_camera_parameters, load_world_transformation
+from rtcosmik.camera.cam_utils import (
+    list_cameras,
+    load_camera_parameters,
+    load_world_transformation,
+)
 from rtcosmik.camera.camera import Camera
 from rtcosmik.utils.mp_utils import create_camera_shared_ressources
 from rtcosmik.triangulation.triangulation import triangulate_points
@@ -34,16 +39,18 @@ import logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-    force=True
+    force=True,
 )
 
 LOGGER = logging.getLogger(__name__)
+
 
 def list_videos(data_dir: Path) -> List[Path]:
     if not data_dir.exists():
         raise FileNotFoundError(f"data dir does not exist: {data_dir}")
     vids = [p for p in sorted(data_dir.iterdir()) if p.suffix.lower() in [".mp4"]]
     return vids
+
 
 @dataclass
 class OfflineVideoSource:
@@ -75,6 +82,7 @@ class OfflineVideoSource:
         for cap in self.caps:
             cap.release()
 
+
 def run_triangulation(args):
     torch.backends.cudnn.benchmark = False
     torch.backends.cuda.matmul.allow_tf32 = True
@@ -83,18 +91,28 @@ def run_triangulation(args):
     # Determine size
     W = settings.width
     H = settings.height
-    mtxs, dists, projections, rotations, translations = load_camera_parameters(settings.cam_calib_path)
+    mtxs, dists, projections, rotations, translations = load_camera_parameters(
+        settings.cam_calib_path
+    )
     world_R1_cam, world_T1_cam = load_world_transformation(settings.cam_calib_path)
 
     if args.online:
         cameras = list_cameras()
         NUM_CAMERAS = len(cameras)
         FRAME_SHAPE = (H, W, 3)
-        camera_buffers, camera_timestamps, camera_locks, frame_counters, camera_barrier, stop_event = create_camera_shared_ressources(NUM_CAMERAS, FRAME_SHAPE)
+        (
+            camera_buffers,
+            camera_timestamps,
+            camera_locks,
+            frame_counters,
+            camera_barrier,
+            stop_event,
+        ) = create_camera_shared_ressources(NUM_CAMERAS, FRAME_SHAPE)
 
         # Create camera processes
         camera_processes = [
-            Camera(list(cameras.keys())[i],
+            Camera(
+                list(cameras.keys())[i],
                 camera_buffers[i],
                 camera_timestamps[i],
                 camera_locks[i],
@@ -103,7 +121,8 @@ def run_triangulation(args):
                 stop_event,
                 FRAME_SHAPE,
                 settings.fs,
-                settings.fourcc,)
+                settings.fourcc,
+            )
             for i in range(NUM_CAMERAS)
         ]
 
@@ -138,11 +157,10 @@ def run_triangulation(args):
             stop_event.set()
             # Stop processes
             for process in processes:
-                process.stop() if hasattr(process, 'stop') else None
+                process.stop() if hasattr(process, "stop") else None
                 process.join(timeout=2)
 
-    else: # offline mode
-
+    else:  # offline mode
         # --- 1. INITIALISATION MESHCAT ---
         vis = meshcat.Visualizer()
         LOGGER.info(f"[INFO] Meshcat visualizer available here: {vis.url()}")
@@ -214,9 +232,9 @@ def run_triangulation(args):
             )
 
             poses_triangul = torch.from_numpy(p3d).to(dtype=torch.float32)
-            poses_cam0=nlf_out['poses3d'][0]/1000
+            poses_cam0 = nlf_out["poses3d"][0] / 1000
 
-            if nlf_out['poses3d'][0].shape[0] > 0:
+            if nlf_out["poses3d"][0].shape[0] > 0:
                 points_all = poses_cam0.view(-1, 3).cpu().numpy().T
 
                 colors = np.zeros_like(points_all)
@@ -244,6 +262,7 @@ def run_triangulation(args):
 
         src.release()
 
+
 def add_arguments(p: argparse.ArgumentParser):
 
     p.add_argument("--online", action="store_true")
@@ -256,6 +275,7 @@ def add_arguments(p: argparse.ArgumentParser):
         default=None,
         help="Optional explicit list of input videos",
     )
+
 
 def main():
     p = argparse.ArgumentParser()
