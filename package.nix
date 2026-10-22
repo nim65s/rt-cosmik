@@ -15,6 +15,7 @@
   torch,
   torchvision,
   nix-update-script,
+  pytestCheckHook,
   argcomplete,
   installShellFiles,
 }:
@@ -56,15 +57,17 @@ buildPythonPackage (finalAttrs: {
     ultralytics
   ];
 
-  pythonImportsCheck = [
-    "rtcosmik"
-  ];
-
-  passthru.updateScript = nix-update-script { };
-
   nativeBuildInputs = [
     installShellFiles
     argcomplete
+  ];
+
+  nativeCheckInputs = [
+    pytestCheckHook
+  ];
+
+  pythonImportsCheck = [
+    "rtcosmik"
   ];
 
   postInstall = ''
@@ -75,6 +78,8 @@ buildPythonPackage (finalAttrs: {
   '';
 
   dontCheckPythonMetadata = true;
+
+  passthru.updateScript = nix-update-script { };
 
   meta = {
     description = "Real-Time Constrained and Open-Source Multibody Inverse Kinematics";
